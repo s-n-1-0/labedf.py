@@ -1,2 +1,2 @@
-from .utilities import edf
 from . import csv2
+__version__ = '1.0.0'

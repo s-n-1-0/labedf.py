@@ -1,2 +1,5 @@
 **/__pycache__/**
 tests/private/**
+build/**
+dist/**
+*.egg-info/**
