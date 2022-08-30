@@ -3,3 +3,4 @@ tests/private/**
 build/**
 dist/**
 *.egg-info/**
+*.hdf5
