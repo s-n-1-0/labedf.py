@@ -4,18 +4,18 @@ import labcsv
 from labcsv import DefaultHeaderName as DHName
 from .utilities import edf
 import numpy as np
-def merge_csv2edf(edf_path:str,csv_path:str,output_path:str = None,marker_name:str = "Marker"):
+def merge_csv2edf(edf_path:str,csv_path:str,export_path:str = None,marker_name:str = "Marker"):
     """
     Write the lab.js sender names to edf as annotations. (Generate a copy file)
     Args:
         edf_path (str): edf file path
         csv_path (str): csv file path
-        output_path (str, optional): output file path. Defaults to None.(None is <edf_path + "-copy">)
+        export_path (str, optional): output file path. Defaults to None.(None is <edf_path + "-copy">)
     """
     edf_dir_path = os.path.dirname(edf_path)
     edf_filename_path =  os.path.splitext(os.path.basename(edf_path))[0]
-    if output_path is None:
-        output_path = f"{edf_dir_path}/{edf_filename_path}_copy.edf"
+    if export_path is None:
+        export_path = f"{edf_dir_path}/{edf_filename_path}_copy.edf"
     edf_reader = pyedflib.EdfReader(edf_path)
 
     #make lab.js annotaions
@@ -29,4 +29,4 @@ def merge_csv2edf(edf_path:str,csv_path:str,output_path:str = None,marker_name:s
     def copied_func(redf:pyedflib.EdfReader,wedf:pyedflib.EdfWriter):
         for ot in offset_times:
             wedf.writeAnnotation(ot,-1,marker_name)
-    edf.copy(edf_reader,output_path,copied_func)
+    edf.copy(edf_reader,export_path,copied_func)
