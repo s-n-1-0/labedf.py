@@ -13,7 +13,7 @@ setup(
     description="Merge the lab.js csv file and the edf file.",
     install_requires=[
         "pyedflib>=0.1.28",
-        "labcsv>=1.0.2",
+        "labcsv>=1.0.3",
         "numpy>=1.22.4",
         "pyedflib>=0.1.28",
         ],
