@@ -22,7 +22,8 @@ def merge_csv2edf(edf_path:str,csv_path:str,export_path:str = None,marker_name:s
 
     #make lab.js annotaions
     annos = edf.get_annotations(edf_reader)
-    rlab = labcsv.read_csv(csv_path)
+    rlab_dtype = {label_header_name:str} if not (label_header_name is None) else None
+    rlab = labcsv.read_csv(csv_path,dtype=rlab_dtype)
     start_time_end = rlab.get_column_values(DHName.TIME_END)[0]
     senders = rlab.get_column_values(DHName.SENDER)
     marker_indexes = np.where(senders == marker_name)[0]
