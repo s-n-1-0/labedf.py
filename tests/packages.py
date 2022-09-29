@@ -3,10 +3,10 @@ from pickle import TRUE
 import pyedflib
 import labcsv
 import numpy as np
-import pyedflib
+import h5py
 
 # %% print used libraries
-lst = [pyedflib,labcsv,np,pyedflib]
+lst = [pyedflib,labcsv,np,h5py]
 replace_key = '\''
 is_break = True
 txt = "["

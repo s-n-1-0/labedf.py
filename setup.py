@@ -15,7 +15,7 @@ setup(
         "pyedflib>=0.1.28",
         "labcsv>=1.0.3",
         "numpy>=1.22.4",
-        "pyedflib>=0.1.28",
+        "h5py>=3.2.1"
         ],
     packages=["labedf","labedf.utilities"],
     license="MIT",
