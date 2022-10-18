@@ -2,16 +2,18 @@ import os
 import pyedflib
 import labcsv
 from labcsv import DefaultHeaderName as DHName
+from typing import Optional
 from .utilities import edf
 import numpy as np
-def merge_csv2edf(edf_path:str,csv_path:str,export_path:str = None,marker_name:str = "Marker",label_header_name:str = None):
+def merge_csv2edf(edf_path:str,csv_path:str,export_path:Optional[str] = None,marker_name:str = "Marker",marker_end_name:Optional[str]="__End__",label_header_name:str = None):
     """
     Write the lab.js sender names to edf as annotations. (Generate a copy file)
     Args:
         edf_path (str): edf file path
         csv_path (str): csv file path
-        export_path (str, optional): output file path. Defaults to None.(None is <edf_path + "-copy">)
-        marker_name(str?) : filter sender name(= "sender" value)
+        export_path (str?): output file path. Defaults to None.(None is <edf_path + "-copy">)
+        marker_name(str) : filter sender name(= "sender" value)
+        marker_end_name(str?) : annotation of marker_name end time
         label_header_name(str?) : label header name
     """
     edf_dir_path = os.path.dirname(edf_path)
@@ -27,13 +29,17 @@ def merge_csv2edf(edf_path:str,csv_path:str,export_path:str = None,marker_name:s
     start_time_end = rlab.get_column_values(DHName.TIME_END)[0]
     senders = rlab.get_column_values(DHName.SENDER)
     marker_indexes = np.where(senders == marker_name)[0]
+    time_ends = rlab.get_column_values(DHName.TIME_END)[marker_indexes]
     time_runs = rlab.get_column_values(DHName.TIME_RUN)[marker_indexes]
-    offset_times = ((time_runs - start_time_end) / 1000.0) + annos[1][1]
+    offset_time_runs = ((time_runs - start_time_end) / 1000.0) + annos[1][1]
+    offset_time_ends = ((time_ends - start_time_end) / 1000.0) + annos[1][1]
     labels = rlab.get_column_values(label_header_name)[marker_indexes] if not(label_header_name is None) else [None for _ in range(len(marker_indexes))]
     def copied_func(redf:pyedflib.EdfReader,wedf:pyedflib.EdfWriter):
-        for ot,l in zip(offset_times,labels):
+        for otr,ote,l in zip(offset_time_runs,offset_time_ends,labels):
             mn = marker_name
             if not(l is None):
                 mn += f"_{l}"
-            wedf.writeAnnotation(ot,-1,mn)
+            wedf.writeAnnotation(otr,-1,mn)
+            if not (marker_end_name is None):
+                wedf.writeAnnotation(ote,-1,marker_end_name)
     edf.copy(edf_reader,export_path,copied_func)
