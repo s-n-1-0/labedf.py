@@ -5,7 +5,7 @@ from .utilities import edf
 import numpy as np
 import h5py
 from typing import Callable
-def split_annotations_edf2hdf(edf_path:str,export_path:str,is_overwrite:bool = False,is_groupby:bool = False,filters:list[str] = None,preprocessing_annsignals_func:Callable[[np.ndarray],np.ndarray] = None,marker_end_name:Optional[str] = "__End__"):
+def split_annotations_edf2hdf(edf_path:str,export_path:str,is_overwrite:bool = False,is_groupby:bool = False,filters:list[str] = None,preprocessing_annsignals_func:Callable[[np.ndarray],np.ndarray] = None,end_marker_name:Optional[str] = "__End__"):
     """Split the edf file by annotation and save it in the hdf file.
      Args:
         edf_path : read edf path
@@ -14,7 +14,7 @@ def split_annotations_edf2hdf(edf_path:str,export_path:str,is_overwrite:bool = F
         is_groupby : grouping
         filters : annotation filters
         preprocessing_annsignals_func : Preprocess the signals split by annotations. ndarray : ch × annotation range 
-        marker_end_name(str?) : annotation of marker_name end time
+        end_marker_name(str?) : annotation of marker_name end time
     """
     with pyedflib.EdfReader(edf_path) as edf_reader:
         signals = np.array(edf.get_all_signals(edf_reader))
@@ -22,7 +22,7 @@ def split_annotations_edf2hdf(edf_path:str,export_path:str,is_overwrite:bool = F
         split_signals = [] #[(annotation name,signal,label)]
         for idx,ann in enumerate(annotations):
             ann_name,ann_time,_,ann_idx = ann
-            if ann_name == marker_end_name:
+            if ann_name == end_marker_name:
                 continue
             split_ann_name = ann_name.split("_")
             ann_group_name = "_".join(split_ann_name[:-1]) if len(split_ann_name) > 1 else ann_name
