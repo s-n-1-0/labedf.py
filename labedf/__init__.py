@@ -1,2 +1,2 @@
-from . import csv2
-__version__ = '1.0.0'
+from . import csv2,edf2
+__version__ = '1.1.0'
