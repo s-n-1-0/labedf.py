@@ -25,6 +25,7 @@ def merge_csv2edf(edf_path:str,
         end_marker_name(str?) : annotation of marker_name end time
         end_marker_offset(float) : marker_name end time offset (seconds)
         label_header_name(str?) : label header name
+        preprocessing_func(function) : preprocessing function
     """
     edf_dir_path = os.path.dirname(edf_path)
     edf_filename_path =  os.path.splitext(os.path.basename(edf_path))[0]
