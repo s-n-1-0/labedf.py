@@ -1,7 +1,7 @@
+from numpy import ndarray
 import pyedflib
 import math
-from typing import Any
-from pyclbr import Function
+from typing import Any, Callable,Union
 def get_all_signals(edf:pyedflib.EdfReader):
     """
     get all signals
@@ -29,7 +29,8 @@ def get_channels_length(edf:pyedflib.EdfReader):
     get channels length
     """
     return len(edf.getSignalHeaders())
-def copy(redf:pyedflib.EdfReader,copy_path:str,copied_func:Function = None):
+CopiedFuncType = Callable[[pyedflib.EdfReader,pyedflib.EdfWriter,list[ndarray]],Union[list[ndarray],None]]
+def copy(redf:pyedflib.EdfReader,copy_path:str,copied_func:Union[CopiedFuncType,None] = None):
     """
     edf file copy
     """
@@ -40,10 +41,14 @@ def copy(redf:pyedflib.EdfReader,copy_path:str,copied_func:Function = None):
         annos = redf.readAnnotations()
         wedf.setHeader(header)
         wedf.setSignalHeaders(redf.getSignalHeaders())
-        wedf.writeSamples(get_all_signals(redf))
+        all_signals = get_all_signals(redf)
+        
         for i,_ in enumerate(annos[0]):
             wedf.writeAnnotation(annos[0][i],annos[1][i],annos[2][i])
         if not (copied_func is None):
-            copied_func(redf,wedf)
+            _all_signals = copied_func(redf,wedf,all_signals)
+            if not (_all_signals is None):
+                all_signals = _all_signals
+        wedf.writeSamples(all_signals)
         wedf.close()
     return ch
