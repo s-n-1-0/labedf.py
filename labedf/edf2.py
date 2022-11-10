@@ -5,7 +5,13 @@ from .utilities import edf
 import numpy as np
 import h5py
 from typing import Callable
-def split_annotations_edf2hdf(edf_path:str,export_path:str,is_overwrite:bool = False,is_groupby:bool = False,filters:list[str] = None,preprocessing_annsignals_func:Callable[[np.ndarray],np.ndarray] = None,end_marker_name:Optional[str] = "__End__"):
+def split_annotations_edf2hdf(edf_path:str,
+    export_path:str,
+    is_overwrite:bool = False,
+    is_groupby:bool = False,
+    filters:list[str] = None,
+    preprocessing_func:Optional[Callable[[list[np.ndarray]],list[np.ndarray]]] = None,
+    end_marker_name:Optional[str] = "__End__"):
     """Split the edf file by annotation and save it in the hdf file.
      Args:
         edf_path : read edf path
@@ -13,11 +19,14 @@ def split_annotations_edf2hdf(edf_path:str,export_path:str,is_overwrite:bool = F
         is_overwrite : overwrite the edf file
         is_groupby : grouping
         filters : annotation filters
-        preprocessing_annsignals_func : Preprocess the signals split by annotations. ndarray : ch × annotation range 
+        preprocessing_func(function) : preprocessing function
         end_marker_name(str?) : annotation of marker_name end time
     """
     with pyedflib.EdfReader(edf_path) as edf_reader:
-        signals = np.array(edf.get_all_signals(edf_reader))
+        signals = edf.get_all_signals(edf_reader)
+        if preprocessing_func is not None:
+            signals = preprocessing_func(signals)
+        signals = np.array(signals)
         annotations =  edf.get_annotations(edf_reader)
         split_signals = [] #[(annotation name,signal,label)]
         for idx,ann in enumerate(annotations):
@@ -30,8 +39,6 @@ def split_annotations_edf2hdf(edf_path:str,export_path:str,is_overwrite:bool = F
             split_signals.append((ann_group_name,signals[:,ann_idx:(annotations[idx + 1][3] if idx + 1 < len(annotations) else signals.shape[1])],label))
         if not(filters is None):
             split_signals =  [ss for ss in split_signals if ss[0] in filters]
-        if not(preprocessing_annsignals_func is None):
-            split_signals = [(ann_name,preprocessing_annsignals_func(ann_signals),label) for ann_name,ann_signals,label in split_signals]
     with h5py.File(export_path, mode='r+' if is_overwrite else 'w') as f:
         ann_group = f.require_group("/annotations")
         if is_groupby:
