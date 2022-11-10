@@ -1,10 +1,19 @@
 import os
+from numpy import ndarray
 import pyedflib
 import labcsv
 from labcsv import DefaultHeaderName as DHName
-from typing import Optional
+from typing import Callable, Optional
 from .utilities import edf
-def merge_csv2edf(edf_path:str,csv_path:str,export_path:Optional[str] = None,marker_name:str = "Marker",sync_marker_name:str = "sync",end_marker_name:Optional[str]="__End__",end_marker_offset:float = 0,label_header_name:str = None):
+def merge_csv2edf(edf_path:str,
+                csv_path:str,
+                export_path:Optional[str] = None,
+                marker_name:str = "Marker",
+                sync_marker_name:str = "sync",
+                end_marker_name:Optional[str]="__End__",
+                end_marker_offset:float = 0,
+                label_header_name:str = None,
+                preprocessing_func:Optional[Callable[[list[ndarray]],list[ndarray]]] = None):
     """
     Write the lab.js sender names to edf as annotations. (Generate a copy file)
     Args:
@@ -45,7 +54,7 @@ def merge_csv2edf(edf_path:str,csv_path:str,export_path:Optional[str] = None,mar
         offset_time_end = ((time_end - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
         results.append((label,offset_time_run,offset_time_end))
 
-    def copied_func(_ ,wedf:pyedflib.EdfWriter):
+    def copied_func(_ ,wedf:pyedflib.EdfWriter,signals:list[ndarray]):
         for l,otr,ote, in results:
             mn = marker_name
             if not(l is None):
@@ -53,4 +62,7 @@ def merge_csv2edf(edf_path:str,csv_path:str,export_path:Optional[str] = None,mar
             wedf.writeAnnotation(otr,-1,mn)
             if not (end_marker_name is None):
                 wedf.writeAnnotation(ote + end_marker_offset,-1,end_marker_name)
+        if preprocessing_func is not None:
+            return preprocessing_func(signals)
+        return signals
     edf.copy(edf_reader,export_path,copied_func)
