@@ -23,7 +23,9 @@ edf2.split_annotations_edf2hdf("./ex.edf","./ex.hdf5",is_groupby=True)
 #### Optional Arguments
 + is_groupby : GROUP BY (default value = False)
 + is_overwrite : overwite a file(default value = False)
-+ preprocessing_func : preprocessing function
++ before_preprocessing_func : preprocessing function
     + type : list[ndarray] -> list[ndarray]
++ after_preprocessing_func(function?) : Preprocess the signals split by annotations. ndarray
+    + type : ndarray(ch × annotation range) -> ndarray
 + others
     + https://github.com/s-n-1-0/labedf.py/blob/main/labedf/edf2.py
