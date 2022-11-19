@@ -10,7 +10,8 @@ def split_annotations_edf2hdf(edf_path:str,
     is_overwrite:bool = False,
     is_groupby:bool = False,
     filters:list[str] = None,
-    preprocessing_func:Optional[Callable[[list[np.ndarray]],list[np.ndarray]]] = None,
+    before_preprocessing_func:Optional[Callable[[list[np.ndarray]],list[np.ndarray]]] = None,
+    after_preprocessing_func:Callable[[np.ndarray],np.ndarray] = None,
     end_marker_name:Optional[str] = "__End__"):
     """Split the edf file by annotation and save it in the hdf file.
      Args:
@@ -19,13 +20,14 @@ def split_annotations_edf2hdf(edf_path:str,
         is_overwrite : overwrite the edf file
         is_groupby : grouping
         filters : annotation filters
-        preprocessing_func(function) : preprocessing function
+        before_preprocessing_func(function?) : before preprocessing function
+        after_preprocessing_func(function?) : Preprocess the signals split by annotations. ndarray : ch × annotation range 
         end_marker_name(str?) : annotation of marker_name end time
     """
     with pyedflib.EdfReader(edf_path) as edf_reader:
         signals = edf.get_all_signals(edf_reader)
-        if preprocessing_func is not None:
-            signals = preprocessing_func(signals)
+        if before_preprocessing_func is not None:
+            signals = before_preprocessing_func(signals)
         signals = np.array(signals)
         annotations =  edf.get_annotations(edf_reader)
         split_signals = [] #[(annotation name,signal,label)]
@@ -39,6 +41,8 @@ def split_annotations_edf2hdf(edf_path:str,
             split_signals.append((ann_group_name,signals[:,ann_idx:(annotations[idx + 1][3] if idx + 1 < len(annotations) else signals.shape[1])],label))
         if not(filters is None):
             split_signals =  [ss for ss in split_signals if ss[0] in filters]
+        if not(after_preprocessing_func is None):
+            split_signals = [(ann_name,after_preprocessing_func(ann_signals),label) for ann_name,ann_signals,label in split_signals]
     with h5py.File(export_path, mode='r+' if is_overwrite else 'w') as f:
         ann_group = f.require_group("/annotations")
         if is_groupby:
