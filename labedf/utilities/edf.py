@@ -13,7 +13,14 @@ def get_fs(edf:pyedflib.EdfReader,chn=0):
     get sample rate
     """
     return edf.getSignalHeader(chn)['sample_rate'] # = fs
-    
+
+
+GetAnnotationType = tuple[str,float,Any,int]
+"""
+tuple(name,time(s),duration,wave index)
+"""
+
+
 def get_annotations(edf:pyedflib.EdfReader):
     """
     get  annotations
@@ -22,7 +29,7 @@ def get_annotations(edf:pyedflib.EdfReader):
     """
     annotations = edf.readAnnotations()
     fs = get_fs(edf)
-    rows:list[tuple[str,float,Any,int]] = [(name,time,duration,math.floor(time * fs))for time,duration,name in zip(annotations[0],annotations[1],annotations[2])]
+    rows:list[GetAnnotationType] = [(name,time,duration,math.floor(time * fs))for time,duration,name in zip(annotations[0],annotations[1],annotations[2])]
     return rows
 def get_channels_length(edf:pyedflib.EdfReader):
     """

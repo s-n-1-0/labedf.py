@@ -1,6 +1,6 @@
 # %%
 import pyedflib
-from typing import Optional
+from typing import Any, Optional
 from .utilities import edf
 import numpy as np
 import h5py
@@ -10,7 +10,8 @@ def split_annotations_edf2hdf(edf_path:str,
     is_overwrite:bool = False,
     is_groupby:bool = False,
     filters:list[str] = None,
-    before_preprocessing_func:Optional[Callable[[list[np.ndarray]],list[np.ndarray]]] = None,
+    before_preprocessing_func:Optional[Callable[[list[np.ndarray]],Any]] = None,
+    split_signals_func:Optional[Callable[[Any,edf.GetAnnotationType,Optional[edf.GetAnnotationType]],np.ndarray]] = None,
     after_preprocessing_func:Callable[[np.ndarray],np.ndarray] = None,
     end_marker_name:Optional[str] = "__End__"):
     """Split the edf file by annotation and save it in the hdf file.
@@ -20,7 +21,8 @@ def split_annotations_edf2hdf(edf_path:str,
         is_overwrite : overwrite the edf file
         is_groupby : grouping
         filters : annotation filters
-        before_preprocessing_func(function?) : before preprocessing function
+        before_preprocessing_func(function?) : before preprocessing function (split_signals_func must also be used when changing the signal length)
+        split_signals_func(function?) : signal split function
         after_preprocessing_func(function?) : Preprocess the signals split by annotations. ndarray : ch × annotation range 
         end_marker_name(str?) : annotation of marker_name end time
     """
@@ -28,17 +30,22 @@ def split_annotations_edf2hdf(edf_path:str,
         signals = edf.get_all_signals(edf_reader)
         if before_preprocessing_func is not None:
             signals = before_preprocessing_func(signals)
-        signals = np.array(signals)
         annotations =  edf.get_annotations(edf_reader)
         split_signals = [] #[(annotation name,signal,label)]
         for idx,ann in enumerate(annotations):
+            next_ann:Optional[edf.GetAnnotationType] = annotations[idx + 1] if idx + 1 < len(annotations) else None
             ann_name,ann_time,_,ann_idx = ann
             if ann_name == end_marker_name:
                 continue
             split_ann_name = ann_name.split("_")
             ann_group_name = "_".join(split_ann_name[:-1]) if len(split_ann_name) > 1 else ann_name
             label= split_ann_name[-1] if len(split_ann_name) > 1 else ""
-            split_signals.append((ann_group_name,signals[:,ann_idx:(annotations[idx + 1][3] if idx + 1 < len(annotations) else signals.shape[1])],label))
+            if split_signals_func is None:
+                signals = np.array(signals)
+                split_signals.append((ann_group_name,signals[:,ann_idx:(next_ann[3] if next_ann is not None else signals.shape[1])],label))
+            else:
+                s = split_signals_func(signals,ann,next_ann)
+                split_signals.append((ann_group_name,s,label))
         if not(filters is None):
             split_signals =  [ss for ss in split_signals if ss[0] in filters]
         if not(after_preprocessing_func is None):
