@@ -30,8 +30,17 @@ def split_annotations_edf2hdf(edf_path:str,
         signals = edf.get_all_signals(edf_reader)
         if before_preprocessing_func is not None:
             signals = before_preprocessing_func(signals)
+        # simple type check(np.ndarray or list[np.ndarray])
+        common_attrs = {}
+        if isinstance(signals,np.ndarray) or \
+           (isinstance(signals,list) and isinstance(signals[0],np.ndarray) and [type(s) for s in signals].count(type(signals[0])) == len(signals)):
+            signals = np.array(signals)
+            common_attrs = {
+            "presplit_mean":np.mean(signals,axis=1),
+            "presplit_std" :np.std(signals,axis=1)
+            }
         annotations =  edf.get_annotations(edf_reader)
-        split_signals = [] #[(annotation name,signal,label)]
+        split_signals:list[tuple[str,np.ndarray,str,dict]] = [] #[(annotation name,signal,label)]
         for idx,ann in enumerate(annotations):
             next_ann:Optional[edf.GetAnnotationType] = annotations[idx + 1] if idx + 1 < len(annotations) else None
             ann_name,ann_time,_,ann_idx = ann
@@ -42,10 +51,10 @@ def split_annotations_edf2hdf(edf_path:str,
             label= split_ann_name[-1] if len(split_ann_name) > 1 else ""
             if split_signals_func is None:
                 signals = np.array(signals)
-                split_signals.append((ann_group_name,signals[:,ann_idx:(next_ann[3] if next_ann is not None else signals.shape[1])],label))
+                split_signals.append((ann_group_name,signals[:,ann_idx:(next_ann[3] if next_ann is not None else signals.shape[1])],label,common_attrs))
             else:
                 s = split_signals_func(signals,ann,next_ann)
-                split_signals.append((ann_group_name,s,label))
+                split_signals.append((ann_group_name,s,label,common_attrs))
         if not(filters is None):
             split_signals =  [ss for ss in split_signals if ss[0] in filters]
         if not(after_preprocessing_func is None):
@@ -54,17 +63,21 @@ def split_annotations_edf2hdf(edf_path:str,
         ann_group = f.require_group("/annotations")
         if is_groupby:
             for idx,ann in enumerate(split_signals):
-                ann_group_name,ann_signals,label = ann
+                ann_group_name,ann_signals,label,attrs = ann
                 local_group = ann_group.require_group("./" + ann_group_name)
                 counter = local_group.attrs.get("count")
                 counter = 0 if counter is None else counter + 1
                 local_group.attrs["count"] = counter
                 d = local_group.create_dataset(f"{counter}",ann_signals.shape,data=ann_signals)
+                for key in attrs.keys():
+                    d.attrs[key] = attrs[key]
                 d.attrs["label"] = label
 
         else:
             for idx,ann in enumerate(split_signals):
-                ann_group_name,ann_signals,label = ann
+                ann_group_name,ann_signals,label,attrs = ann
                 d = ann_group.create_dataset(f"{idx}.{ann_group_name}",ann_signals.shape,data=ann_signals)
+                for key in attrs.keys():
+                    d.attrs[key] = attrs[key]
                 d.attrs["label"] = label
 # %%
