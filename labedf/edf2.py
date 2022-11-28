@@ -12,7 +12,7 @@ def split_annotations_edf2hdf(edf_path:str,
     filters:list[str] = None,
     before_preprocessing_func:Optional[Callable[[list[np.ndarray]],Any]] = None,
     split_signals_func:Optional[Callable[[Any,edf.GetAnnotationType,Optional[edf.GetAnnotationType]],np.ndarray]] = None,
-    after_preprocessing_func:Callable[[np.ndarray],np.ndarray] = None,
+    after_preprocessing_func:Callable[[np.ndarray,str],np.ndarray] = None,
     end_marker_name:Optional[str] = "__End__"):
     """Split the edf file by annotation and save it in the hdf file.
      Args:
@@ -23,7 +23,7 @@ def split_annotations_edf2hdf(edf_path:str,
         filters : annotation filters
         before_preprocessing_func(function?) : before preprocessing function (split_signals_func must also be used when changing the signal length)
         split_signals_func(function?) : signal split function
-        after_preprocessing_func(function?) : Preprocess the signals split by annotations. ndarray : ch × annotation range 
+        after_preprocessing_func(function[[signals,label],ndarray]?) : Preprocess the signals split by annotations. ndarray : ch × annotation range 
         end_marker_name(str?) : annotation of marker_name end time
     """
     with pyedflib.EdfReader(edf_path) as edf_reader:
@@ -58,7 +58,7 @@ def split_annotations_edf2hdf(edf_path:str,
         if not(filters is None):
             split_signals =  [ss for ss in split_signals if ss[0] in filters]
         if not(after_preprocessing_func is None):
-            split_signals = [(ann_name,after_preprocessing_func(ann_signals),label,common_attrs) for ann_name,ann_signals,label,common_attrs in split_signals]
+            split_signals = [(ann_name,after_preprocessing_func(ann_signals,label),label,common_attrs) for ann_name,ann_signals,label,common_attrs in split_signals]
     with h5py.File(export_path, mode='r+' if is_overwrite else 'w') as f:
         ann_group = f.require_group("/annotations")
         if is_groupby:
