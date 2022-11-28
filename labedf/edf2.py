@@ -58,7 +58,7 @@ def split_annotations_edf2hdf(edf_path:str,
         if not(filters is None):
             split_signals =  [ss for ss in split_signals if ss[0] in filters]
         if not(after_preprocessing_func is None):
-            split_signals = [(ann_name,after_preprocessing_func(ann_signals),label) for ann_name,ann_signals,label in split_signals]
+            split_signals = [(ann_name,after_preprocessing_func(ann_signals),label,common_attrs) for ann_name,ann_signals,label,common_attrs in split_signals]
     with h5py.File(export_path, mode='r+' if is_overwrite else 'w') as f:
         ann_group = f.require_group("/annotations")
         if is_groupby:
