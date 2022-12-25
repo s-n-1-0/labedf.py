@@ -9,7 +9,7 @@ def split_annotations_edf2hdf(edf_path:str,
     export_path:str,
     is_overwrite:bool = False,
     is_groupby:bool = False,
-    filters:list[str] = None,
+    annotation_filter_func:Optional[Callable[[str],bool]] = None,
     before_preprocessing_func:Optional[Callable[[list[np.ndarray]],Any]] = None,
     split_signals_func:Optional[Callable[[Any,edf.GetAnnotationType,Optional[edf.GetAnnotationType]],np.ndarray]] = None,
     after_preprocessing_func:Callable[[np.ndarray,str],np.ndarray] = None,
@@ -20,7 +20,7 @@ def split_annotations_edf2hdf(edf_path:str,
         export_path : write hdf path
         is_overwrite : overwrite the edf file
         is_groupby : grouping
-        filters : annotation filters
+        annotation_filter_func(function[[str],bool]?) : annotation filter
         before_preprocessing_func(function?) : before preprocessing function (split_signals_func must also be used when changing the signal length)
         split_signals_func(function?) : signal split function
         after_preprocessing_func(function[[signals,label],ndarray]?) : Preprocess the signals split by annotations. ndarray : ch × annotation range 
@@ -55,8 +55,8 @@ def split_annotations_edf2hdf(edf_path:str,
             else:
                 s = split_signals_func(signals,ann,next_ann)
                 split_signals.append((ann_group_name,s,label,common_attrs))
-        if not(filters is None):
-            split_signals =  [ss for ss in split_signals if ss[0] in filters]
+        if annotation_filter_func is not None:
+            split_signals =  [ss for ss in split_signals if annotation_filter_func(ss[0])]
         if not(after_preprocessing_func is None):
             split_signals = [(ann_name,after_preprocessing_func(ann_signals,label),label,common_attrs) for ann_name,ann_signals,label,common_attrs in split_signals]
     with h5py.File(export_path, mode='r+' if is_overwrite else 'w') as f:
