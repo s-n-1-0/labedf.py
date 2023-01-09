@@ -8,7 +8,7 @@ from .utilities import edf
 def merge_csv2edf(edf_path:str,
                 csv_path:str,
                 export_path:Optional[str] = None,
-                marker_name:str = "Marker",
+                marker_names:list[str] = ["Marker"],
                 sync_marker_name:str = "sync",
                 end_marker_name:Optional[str]="__End__",
                 end_marker_offset:float = 0,
@@ -44,22 +44,22 @@ def merge_csv2edf(edf_path:str,
         raise Exception("Number of sync_marker_name in edf and csv files do not match")
     start_time_count:int = -1
     start_time_end:float = None
-    results:list[tuple[str,float,float]] = []
+    results:list[tuple[str,str,float,float]] = []
     for label,sender,res, time_end,time_run in zip(labels,senders,responses,time_ends,time_runs):
         if res == sync_marker_name:
             start_time_count += 1
             start_time_end = time_ends[sync_lab_annos_indexes[start_time_count]]
-        if sender != marker_name:
+        if not sender in marker_names:
             continue
         offset_time_run = ((time_run - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
         offset_time_end = ((time_end - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
-        results.append((label,offset_time_run,offset_time_end))
+        results.append((sender,label,offset_time_run,offset_time_end))
 
     def copied_func(_ ,wedf:pyedflib.EdfWriter,signals:list[ndarray]):
-        for l,otr,ote, in results:
-            mn = marker_name
-            if not(l is None):
-                mn += f"_{l}"
+        for _marker_name,label,otr,ote, in results:
+            mn = _marker_name
+            if not(label is None):
+                mn += f"_{label}"
             wedf.writeAnnotation(otr,-1,mn)
             if not (end_marker_name is None):
                 wedf.writeAnnotation(ote + end_marker_offset,-1,end_marker_name)
