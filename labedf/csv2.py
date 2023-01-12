@@ -51,9 +51,9 @@ def merge_csv2edf(edf_path:str,
             start_time_end = time_ends[sync_lab_annos_indexes[start_time_count]]
         if not sender in marker_names:
             continue
-        offset_time_run = ((time_run - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
-        offset_time_end = ((time_end - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
-        results.append((sender,label,offset_time_run,offset_time_end))
+        exact_time_run = ((time_run - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
+        exact_time_end = ((time_end - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
+        results.append((sender,label,exact_time_run,exact_time_end))
 
     def copied_func(_ ,wedf:pyedflib.EdfWriter,signals:list[ndarray]):
         for _marker_name,label,otr,ote, in results:
