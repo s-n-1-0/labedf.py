@@ -10,7 +10,6 @@ def merge_csv2edf(edf_path:str,
                 export_path:Optional[str] = None,
                 marker_names:list[str] = ["Marker"],
                 sync_marker_name:str = "sync",
-                end_marker_name:Optional[str]="__End__",
                 end_marker_offset:float = 0,
                 label_header_name:str = None,
                 preprocessing_func:Optional[Callable[[list[ndarray]],list[ndarray]]] = None):
@@ -22,7 +21,6 @@ def merge_csv2edf(edf_path:str,
         export_path (str?): output file path. Defaults to None.(None is <edf_path + "-copy">)
         marker_name(str) : filter sender name(= "sender" value)
         sync_marker_name(str) : "response" value to synchronize files (None = 0 index)
-        end_marker_name(str?) : annotation of marker_name end time
         end_marker_offset(float) : marker_name end time offset (seconds)
         label_header_name(str?) : label header name
         preprocessing_func(function) : preprocessing function
@@ -36,6 +34,7 @@ def merge_csv2edf(edf_path:str,
     rlab = labcsv.read_csv(csv_path,dtype=rlab_dtype)
 
     edf_annos = edf.get_annotations(edf_reader)
+    fs = edf.get_fs(edf_reader)
     senders,responses,time_ends,time_runs = rlab.get_column_list([DHName.SENDER,DHName.RESPONSE,DHName.TIME_END,DHName.TIME_RUN])
     labels = rlab.get_column_values(label_header_name) if not(label_header_name is None) else [None] * len(responses)
     sync_edf_annos = [ea for ea in edf_annos if ea[0] == sync_marker_name]
@@ -44,7 +43,7 @@ def merge_csv2edf(edf_path:str,
         raise Exception("Number of sync_marker_name in edf and csv files do not match")
     start_time_count:int = -1
     start_time_end:float = None
-    results:list[tuple[str,str,float,float]] = []
+    results:list[tuple[str,str,float,float]] = [] # marker,label,exact_time_run,offset_time_end
     for label,sender,res, time_end,time_run in zip(labels,senders,responses,time_ends,time_runs):
         if res == sync_marker_name:
             start_time_count += 1
@@ -53,16 +52,15 @@ def merge_csv2edf(edf_path:str,
             continue
         exact_time_run = ((time_run - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
         exact_time_end = ((time_end - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
-        results.append((sender,label,exact_time_run,exact_time_end))
+        results.append((sender,label,exact_time_run,exact_time_end - exact_time_run + end_marker_offset))
 
     def copied_func(_ ,wedf:pyedflib.EdfWriter,signals:list[ndarray]):
-        for _marker_name,label,otr,ote, in results:
-            mn = _marker_name
+        for _marker_name,label,exact_time,offset_end, in results:
+            offset_end_idx = int(offset_end * fs)
+            mn = f"{offset_end_idx}__{_marker_name}"
             if not(label is None):
-                mn += f"_{label}"
-            wedf.writeAnnotation(otr,-1,mn)
-            if not (end_marker_name is None):
-                wedf.writeAnnotation(ote + end_marker_offset,-1,end_marker_name)
+                mn += f"__{label}"
+            wedf.writeAnnotation(exact_time,-1,mn)
         if preprocessing_func is not None:
             return preprocessing_func(signals)
         return signals
