@@ -9,6 +9,7 @@ def split_annotations_edf2hdf(edf_path:str,
     export_path:str,
     is_overwrite:bool = False,
     is_groupby:bool = False,
+    min_signal_size:Optional[int] = None,
     annotation_filter_func:Optional[Callable[[str],bool]] = None,
     label_filter_func:Optional[Callable[[str],bool]] = None,
     before_preprocessing_func:Optional[Callable[[list[np.ndarray]],Any]] = None,
@@ -20,6 +21,7 @@ def split_annotations_edf2hdf(edf_path:str,
         export_path : write hdf path
         is_overwrite : overwrite the edf file
         is_groupby : grouping
+        min_signal_size(int?) : Minimum signal size. if not met, exclude.
         annotation_filter_func(function[[str],bool]?) : annotation filter
         label_filter_func(function[[str],bool]?) : label filter
         before_preprocessing_func(function?) : before preprocessing function (split_signals_func must also be used when changing the signal length)
@@ -47,12 +49,12 @@ def split_annotations_edf2hdf(edf_path:str,
             label= split_ann_names[-1] if len(split_ann_names) > 2 else ""
             offset_end_idx = int(split_ann_names[0]) if len(split_ann_names) > 1 else 0
             ann_group_name = split_ann_names[1 if len(split_ann_names) > 1 else 0]
-            
             if split_signals_func is None:
                 signals = np.array(signals)
-                split_signals.append((ann_group_name,signals[:,ann_idx:(ann_idx + offset_end_idx)],label,common_attrs))
+                s = signals[:,ann_idx:(ann_idx + offset_end_idx)]
             else:
                 s = split_signals_func(signals,ann)
+            if min_signal_size is None or s.shape[1] >= min_signal_size:
                 split_signals.append((ann_group_name,s,label,common_attrs))
         if annotation_filter_func is not None:
             split_signals =  [ss for ss in split_signals if annotation_filter_func(ss[0])]
