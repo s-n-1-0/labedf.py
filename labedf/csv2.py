@@ -10,7 +10,7 @@ def merge_csv2edf(edf_path:str,
                 export_path:Optional[str] = None,
                 marker_names:list[str] = ["Marker"],
                 sync_marker_name:str = "sync",
-                end_marker_offset:float = 0,
+                marker_offset:tuple[float] = (0,0),
                 label_header_name:str = None,
                 preprocessing_func:Optional[Callable[[list[ndarray]],list[ndarray]]] = None):
     """
@@ -21,7 +21,7 @@ def merge_csv2edf(edf_path:str,
         export_path (str?): output file path. Defaults to None.(None is <edf_path + "-copy">)
         marker_name(str) : filter sender name(= "sender" value)
         sync_marker_name(str) : "response" value to synchronize files (None = 0 index)
-        end_marker_offset(float) : marker_name end time offset (seconds)
+        marker_offset(tuple[float,float]) : marker_name time offset (seconds). (start,end)
         label_header_name(str?) : label header name
         preprocessing_func(function) : preprocessing function
     """
@@ -52,7 +52,8 @@ def merge_csv2edf(edf_path:str,
             continue
         exact_time_run = ((time_run - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
         exact_time_end = ((time_end - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
-        results.append((sender,label,exact_time_run,exact_time_end - exact_time_run + end_marker_offset))
+        start_offset,end_offset = marker_offset
+        results.append((sender,label,exact_time_run + start_offset,exact_time_end - exact_time_run - start_offset + end_offset))
 
     def copied_func(_ ,wedf:pyedflib.EdfWriter,signals:list[ndarray]):
         for _marker_name,label,exact_time,offset_end, in results:
