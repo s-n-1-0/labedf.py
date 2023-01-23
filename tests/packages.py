@@ -4,9 +4,9 @@ import pyedflib
 import labcsv
 import numpy as np
 import h5py
-
+import mne
 # %% print used libraries
-lst = [pyedflib,labcsv,np,h5py]
+lst = [pyedflib,labcsv,np,h5py,mne]
 replace_key = '\''
 is_break = True
 txt = "["

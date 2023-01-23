@@ -12,10 +12,11 @@ setup(
     version=labedf.__version__,
     description="Merge the lab.js csv file and the edf file.",
     install_requires=[
-        "pyedflib>=0.1.28",
-        "labcsv>=1.0.3",
+        "pyedflib>=0.1.30",
+        "labcsv>=1.0.4",
         "numpy>=1.22.4",
-        "h5py>=3.2.1"
+        "h5py>=3.7.0",
+        "mne[hdf5]>=1.3.0"
         ],
     packages=["labedf","labedf.utilities"],
     license="MIT",
