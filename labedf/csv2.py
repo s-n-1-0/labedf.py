@@ -10,7 +10,7 @@ def merge_csv2edf(edf_path:str,
                 export_path:Optional[str] = None,
                 marker_names:list[str] = ["Marker"],
                 sync_marker_name:str = "sync",
-                marker_offset:tuple[float] = (0,0),
+                marker_offset:Optional[tuple[float]] = (0,0),
                 label_header_name:str = None,
                 preprocessing_func:Optional[Callable[[list[ndarray]],list[ndarray]]] = None):
     """
@@ -21,7 +21,7 @@ def merge_csv2edf(edf_path:str,
         export_path (str?): output file path. Defaults to None.(None is <edf_path + "-copy">)
         marker_name(str) : filter sender name(= "sender" value)
         sync_marker_name(str) : "response" value to synchronize files (None = 0 index)
-        marker_offset(tuple[float,float]) : marker_name time offset (seconds). (start,end)
+        marker_offset(tuple[float,float]?) : marker_name time offset (seconds). (start,end). do not write if None.
         label_header_name(str?) : label header name
         preprocessing_func(function) : preprocessing function
     """
@@ -43,7 +43,7 @@ def merge_csv2edf(edf_path:str,
         raise Exception("Number of sync_marker_name in edf and csv files do not match")
     start_time_count:int = -1
     start_time_end:float = None
-    results:list[tuple[str,str,float,float]] = [] # marker,label,exact_time_run,offset_time_end
+    results:list[tuple[str,str,float,Optional[float]]] = [] # marker,label,exact_time_run,offset_time_end
     for label,sender,res, time_end,time_run in zip(labels,senders,responses,time_ends,time_runs):
         if res == sync_marker_name:
             start_time_count += 1
@@ -52,13 +52,19 @@ def merge_csv2edf(edf_path:str,
             continue
         exact_time_run = ((time_run - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
         exact_time_end = ((time_end - start_time_end) / 1000.0) + sync_edf_annos[start_time_count][1]
-        start_offset,end_offset = marker_offset
-        results.append((sender,label,exact_time_run + start_offset,exact_time_end - exact_time_run - start_offset + end_offset))
+        if marker_offset is not None:
+            start_offset,end_offset = marker_offset
+            results.append((sender,label,exact_time_run + start_offset,exact_time_end - exact_time_run - start_offset + end_offset))
+        else:
+            results.append((sender,label,exact_time_run,None))
 
     def copied_func(_ ,wedf:pyedflib.EdfWriter,signals:list[ndarray]):
         for _marker_name,label,exact_time,offset_end, in results:
-            offset_end_idx = int(offset_end * fs)
-            mn = f"{offset_end_idx}__{_marker_name}"
+            if offset_end is not None:
+                offset_end_idx = int(offset_end * fs)
+                mn = f"{offset_end_idx}__{_marker_name}"
+            else:
+                mn = _marker_name
             if not(label is None):
                 mn += f"__{label}"
             wedf.writeAnnotation(exact_time,-1,mn)
