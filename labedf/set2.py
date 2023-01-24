@@ -5,7 +5,7 @@ import h5py
 def merge_set2hdf(edf_path:str,
     export_path:str,
     labels:list[str],
-    marker_name:str = "Marker",
+    marker_names:list[str] = ["Marker"],
     is_overwrite:bool = False,
     is_groupby:bool = False):
     """Split the edf file by annotation and save it in the hdf file.
@@ -18,7 +18,7 @@ def merge_set2hdf(edf_path:str,
 
     epochs = mne.io.read_epochs_eeglab(edf_path)
     with h5py.File(export_path, mode='r+' if is_overwrite else 'w') as f:
-        def write_hdf(label:str):
+        def write_hdf(marker_name:str,label:str):
             data = epochs.get_data(item=f"{marker_name}__{label}")
             ann_group = f.require_group("/annotations")
             if is_groupby:
@@ -33,5 +33,6 @@ def merge_set2hdf(edf_path:str,
                 for idx in range(data.shape[0]):
                     d = ann_group.create_dataset(f"{idx}.{marker_name}",data[idx,:,:].shape,data=data[idx,:,:])
                     d.attrs["label"] = label
-        for label in labels:
-            write_hdf(label)
+        for marker_name in marker_names:
+            for label in labels:
+                write_hdf(marker_name,label)
