@@ -4,23 +4,23 @@ import numpy as np
 import mne
 import h5py
 
-def merge_set2hdf(edf_path:str,
+def merge_set2hdf(set_path:str,
     export_path:str,
     labels:list[str],
     marker_names:list[str] = ["Marker"],
     is_overwrite:bool = False,
     is_groupby:bool = False,
     preprocessing_func:Callable[[np.ndarray,str],np.ndarray] = None):
-    """Split the edf file by annotation and save it in the hdf file.
+    """ EEGLAB(.set) -> HDF Dataset(.h5)
      Args:
-        edf_path : read edf path
+        set_path : read set path
         export_path : write hdf path
         is_overwrite : overwrite the edf file
         is_groupby : grouping
         preprocessing_func(function[[signals,label],ndarray]?) : Processes each segmented data. ndarray : ch × annotation range
     """
 
-    epochs = mne.io.read_epochs_eeglab(edf_path)
+    epochs = mne.io.read_epochs_eeglab(set_path)
     with h5py.File(export_path, mode='r+' if is_overwrite else 'w') as f:
         def write_hdf(marker_name:str,label:str):
             data = epochs.get_data(item=f"{marker_name}__{label}")
