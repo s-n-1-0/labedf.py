@@ -6,8 +6,8 @@ import h5py
 
 def merge_set2hdf(set_path:str,
     export_path:str,
-    labels:list[str],
     marker_names:list[str] = ["Marker"],
+    labels:list[str] = [],
     is_overwrite:bool = False,
     is_groupby:bool = False,
     preprocessing_func:Callable[[np.ndarray,str],np.ndarray] = None):
@@ -23,7 +23,7 @@ def merge_set2hdf(set_path:str,
     epochs = mne.io.read_epochs_eeglab(set_path)
     with h5py.File(export_path, mode='r+' if is_overwrite else 'w') as f:
         def write_hdf(marker_name:str,label:str):
-            data = epochs.get_data(item=f"{marker_name}__{label}")
+            data = epochs.get_data(item=f"{marker_name}__{label}" if label != "" else marker_name)
             ann_group = f.require_group("/annotations")
             for idx in range(data.shape[0]):
                 data_ch = data[idx,:,:]
@@ -40,5 +40,8 @@ def merge_set2hdf(set_path:str,
                         d = ann_group.create_dataset(f"{idx}.{marker_name}",data_ch.shape,data=data_ch)
                         d.attrs["label"] = label
         for marker_name in marker_names:
-            for label in labels:
-                write_hdf(marker_name,label)
+            if len(labels) > 0:
+                for label in labels:
+                    write_hdf(marker_name,label)
+            else:
+                write_hdf(marker_name,"")
