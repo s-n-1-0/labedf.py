@@ -5,7 +5,7 @@ import labcsv
 from labcsv import DefaultHeaderName as DHName
 from typing import Callable, Optional
 from .utilities import edf
-def merge_csv2edf(edf_path:str,
+def merge_edf_csv(edf_path:str,
                 csv_path:str,
                 export_path:Optional[str] = None,
                 marker_names:list[str] = ["Marker"],

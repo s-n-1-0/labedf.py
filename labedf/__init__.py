@@ -1,2 +1,2 @@
-from . import csv2,edf2,set2
+from .edf_csv import *
 __version__ = '1.2.0'
